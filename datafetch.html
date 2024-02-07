@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fetch and Display Data from Firebase</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+            apiKey: "AIzaSyBg1qidh5lq5RxaxljDU3CCzcvC_P89yz0",
+            authDomain: "cbcs-aump.firebaseapp.com",
+            databaseURL: "https://cbcs-aump-default-rtdb.firebaseio.com",
+            projectId: "cbcs-aump",
+            storageBucket: "cbcs-aump.appspot.com",
+            messagingSenderId: "804374939888",
+            appId: "1:804374939888:web:782a6aaa19ac68643f5a35",
+            measurementId: "G-3KLXGDJKHF"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        window.fetchData = async function () {
+            const criteria = document.getElementById('selectionCriteria').value;
+            try {
+                const dbRef = ref(database, 'Students');
+                const snapshot = await get(dbRef);
+                if (snapshot.exists()) {
+                    const students = snapshot.val();
+                    displayData(students, criteria);
+                } else {
+                    document.getElementById('dataDisplay').innerHTML = "<tr><td colspan='6'>No data available</td></tr>";
+                }
+            } catch (error) {
+                console.error(error);
+                document.getElementById('dataDisplay').innerHTML = "<tr><td colspan='6'>Error fetching data</td></tr>";
+            }
+        }
+
+        function displayData(students, criteria) {
+            let tableContent = '';
+            window.exportableData = [];
+            for (const [key, value] of Object.entries(students)) {
+                if (criteria === 'all' || value.department === criteria) {
+                    window.exportableData.push({ name: key, ...value });
+                    tableContent += `<tr>
+                                        <td>${key}</td>
+                                        <td>${value.department}</td>
+                                        <td>${value.enrollmentNumber}</td>
+                                        <td>${value.selectedcourse1}</td>
+                                        <td>${value.selectedcourse2}</td>
+                                        <td>${value.selectedcourse3}</td>
+                                    </tr>`;
+                }
+            }
+            document.getElementById('dataDisplay').innerHTML = tableContent;
+        }
+            window.exportToCsv = function () {
+            if (!window.exportableData || window.exportableData.length === 0) {
+                alert("No data available to export");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            let header = Object.keys(window.exportableData[0]).join(",");
+            csvContent += header + "\r\n";
+
+            window.exportableData.forEach(function(row) {
+                let rowData = Object.values(row).join(",");
+                csvContent += rowData + "\r\n";
+            });
+
+            var encodedUri = encodeURI(csvContent);
+            var link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "students_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+            window.searchData = function() {
+            const searchValue = document.getElementById('searchBar').value.toLowerCase();
+            const tableRows = document.getElementById('dataDisplay').getElementsByTagName('tr');
+
+            for (let i = 0; i < tableRows.length; i++) {
+                let visible = false;
+                const td = tableRows[i].getElementsByTagName('td');
+                for (let j = 0; j < td.length; j++) {
+                    if (td[j] && td[j].textContent.toLowerCase().indexOf(searchValue) > -1) {
+                        visible = true;
+                        break;
+                    }
+                }
+                tableRows[i].style.display = visible ? "" : "none";
+            }
+        };
+
+
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url(./media/2021-03-10.jpg) no-repeat center center fixed;
+            background-size: cover;
+            text-align: center;
+        }
+        #cbcsHeading{
+            font-family:Georgia, 'Times New Roman', Times, serif;
+            font-weight: bolder;
+        }
+        #container {
+            position: relative;
+            width: 80%;
+            margin: 20px auto;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden; /* Ensure the video doesn't overflow the container */
+            border-radius: 30px;
+            border: 5px solid rgb(36, 35, 35);
+        }
+        select, button {
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+        }
+        
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        table, th, td {
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        th {
+            background-color: #f2f2f2;
+            border-spacing: 5px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        #selectionCriteria {
+            width: 50%; /* Increase the width as per your layout */
+            padding: 15px 10px; /* Increase padding for a taller dropdown */
+            margin: 20px auto; /* Optional: Adjust margin as needed */
+            font-size: 18px; /* Increase font size for better readability */
+            border: 2px solid #ddd; /* Optional: Adjust border as needed */
+            border-radius: 20px; /* Optional: Adjust border-radius for rounder corners */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Optional: Add a shadow for depth */
+            display: block; /* Optional: Adjust display property as needed */
+            cursor: pointer; /* Changes the cursor to signify this is a selectable element */
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 20px;
+            background-color: black; /* Green background */
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            /* transition: background-color 0.3s, transform 0.2s, box-shadow 0.2s; */
+        }
+
+        button:hover {
+            background-color: rgb(44, 136, 44); /* Darker shade of green */
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+            border: 1px solid white;
+            /* transition: 1s; */
+        }
+
+        button:active {
+            background-color: #3e8e41;
+            box-shadow: 0 2px 4px 0 rgba(0,0,0,0.2);
+            transform: translateY(1px);
+        }
+        #searchBar {
+        width: 90%; /* Adjust width as needed */
+        padding: 10px;
+        margin: 20px auto; /* Center the search bar */
+        display: block; /* Make it a block element to take up its own line */
+        border: 2px solid #ddd; /* A subtle border */
+        border-radius: 20px; /* Rounded corners */
+        font-size: 16px; /* Increase font size for readability */
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* A light shadow for depth */
+    }
+
+        #searchBar:focus {
+            outline: none; /* Remove the default focus outline */
+            border-color: #aaa; /* Change border color */
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2); /* More pronounced shadow */
+    }
+
+
+        /* Responsive styles */
+        @media screen and (max-width: 768px) {
+            body {
+                background-size: cover; /* Adjust background for smaller screens */
+            }
+
+            #container {
+                width: 95%; /* Make container width responsive */
+                margin: 10px auto;
+                padding: 10px;
+            }
+
+            #myVideo {
+                display: none; /* Hide the video on smaller screens */
+            }
+
+            select, button {
+                margin: 5px;
+                padding: 8px;
+                font-size: 14px;
+            }
+
+            table, th, td {
+                font-size: 12px; /* Smaller font size for table */
+            }
+
+            th, td {
+                padding: 8px; /* Smaller padding for table cells */
+            }
+
+            button {
+                padding: 8px 10px;
+                font-size: 14px;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            h1 {
+                font-size: 20px; /* Smaller font size for headings */
+            }
+
+            select, button {
+                width: 100%; /* Full width for select and buttons */
+                margin: 5px 0; /* Adjust margins */
+            }
+
+            table {
+                display: block;
+                overflow-x: auto; /* Enable horizontal scrolling for tables */
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1 id="cbcsHeading">CBCS DATABASE</h1>
+        <!-- Add this above your table in the HTML -->
+        <input type="text" id="searchBar" placeholder="Search..." onkeyup="searchData()">
+        <select id="selectionCriteria">
+            <option value="all">All</option>
+            <option value="Amity Business School">Amity Business School</option>
+            <option value="Amity Institute of BioTechnology">Amity Institute of BioTechnology</option>
+            <option value="ASET(Mech.)">ASET(Mech.)</option>
+            <option value="ASET(Civil)">ASET(Civil)</option>
+            <option value="ASET(Chemistry)">ASET(Chemistry)</option>
+            <option value="Amity School of Communication">Amity School of Communication</option>
+            <option value="Amity School of Fashion Design and Technology">Amity School of Fashion Design and Technology</option>
+            <option value="Amity Law School">Amity Law School</option>
+            <option value="Amity School of Behavioral Sciences and Allies Sciences">Amity School of Behavioral Sciences and Allies Sciences</option>
+            <option value="Amity School of Languages">Amity School of Languages</option>
+            <option value="Amity School of Social Science">Amity School of Social Science</option>
+            <!-- Add other options here -->
+        </select>
+        <button onclick="fetchData()">Fetch Data</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Enrollment Number</th>
+                    <th>Selected Course 1</th>
+                    <th>Selected Course 2</th>
+                    <th>Selected Course 3</th>
+                </tr>
+            </thead>
+            <tbody id="dataDisplay">
+                <!-- Data will be displayed here -->
+            </tbody>
+        </table>
+        <button onclick="exportToCsv()">Export to CSV</button>
+    </div>
+</body>
+</html>
